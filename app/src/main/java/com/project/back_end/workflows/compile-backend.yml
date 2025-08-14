@@ -1,0 +1,30 @@
+name: Compile Backend
+
+on:
+  push:
+    paths:
+      - "pom.xml"
+      - "src/**"
+      - ".github/workflows/compile-backend.yml"
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compile
+        run: mvn -B -q -DskipTests clean compile
+
+      - name: Run unit tests
+        run: mvn -B -q test
+workflows/compile-backend.yml
