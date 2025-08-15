@@ -1,38 +1,60 @@
-package servlets;
-
-import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+package service;
 
 import database.Scheduler;
 import mainpackage.Patient;
+import mainpackage.Appointment;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
-@WebServlet("/patient/ScheduleAppointment")
-public class ScheduleAppointment extends HttpServlet {
-	private static final long serialVersionUID = 1L;
+public class AppointmentService {
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String docUsername = request.getParameter("docUsername");
-		String appointmentDate = request.getParameter("appointmentDate");
-		HttpSession session = request.getSession();
-		Patient pat = (Patient)session.getAttribute("user-info");
-		if(ServletUtils.isEmpty(docUsername) || ServletUtils.isEmpty(appointmentDate)) {
-			ServletUtils.showForm(request, response, "Empty doctor or date", "newAppointment.jsp");
-			return;
-		}else if(!Scheduler.isDoctorAvailable(docUsername, appointmentDate)){
-			ServletUtils.showForm(request, response, "Doctor "+ docUsername + " isn't available on "+ appointmentDate, "newAppointment.jsp");
-			return;
-		}
-		if(Scheduler.scheduleAppointment(pat, docUsername, appointmentDate)){
-			ServletUtils.showForm(request, response, "Success! Your new appointment scheduled on " + appointmentDate, "newAppointment.jsp");
-		}else{
-			ServletUtils.showForm(request, response, "Error! please try again", "newAppointment.jsp");
-		}
-	}
+    /**
+     * Books a new appointment for the given patient with the specified doctor.
+     *
+     * @param patient          the patient booking the appointment
+     * @param doctorUsername   the username of the doctor
+     * @param appointmentTime  the desired appointment date and time
+     * @return true if the appointment was successfully booked, false otherwise
+     */
+    public boolean bookAppointment(Patient patient, String doctorUsername, LocalDateTime appointmentTime) {
+        if (patient == null || doctorUsername == null || appointmentTime == null) {
+            throw new IllegalArgumentException("Patient, doctor username, and appointment time must not be null");
+        }
 
+        String appointmentDateStr = appointmentTime.toString(); // adapt format as needed for Scheduler
+
+        if (!Scheduler.isDoctorAvailable(doctorUsername, appointmentDateStr)) {
+            return false;
+        }
+
+        return Scheduler.scheduleAppointment(patient, doctorUsername, appointmentDateStr);
+    }
+
+    /**
+     * Retrieves all appointments for the given patient.
+     *
+     * @param patient the patient whose appointments to retrieve
+     * @return list of Appointment objects
+     */
+    public List<Appointment> getAppointmentsForPatient(Patient patient) {
+        if (patient == null) {
+            throw new IllegalArgumentException("Patient must not be null");
+        }
+        return Scheduler.getAppointmentsForPatient(patient);
+    }
+
+    /**
+     * Retrieves all appointments for a given doctor on a specific date.
+     *
+     * @param doctorUsername the doctor's username
+     * @param date           the date to check
+     * @return list of Appointment objects
+     */
+    public List<Appointment> getAppointmentsForDoctorOnDate(String doctorUsername, LocalDateTime date) {
+        if (doctorUsername == null || date == null) {
+            throw new IllegalArgumentException("Doctor username and date must not be null");
+        }
+        return Scheduler.getAppointmentsForDoctorOnDate(doctorUsername, date.toString());
+    }
 }
